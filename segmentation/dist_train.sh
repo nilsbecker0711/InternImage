@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-CONFIG=$1
-GPUS=$2
+CONFIG="configs/cityscapes/upernet_internimage_t_512x1024_160k_cityscapes.py"
+GPUS=1
 PORT=${PORT:-29300}
 
 PYTHONPATH="$(dirname $0)/..":$PYTHONPATH \
