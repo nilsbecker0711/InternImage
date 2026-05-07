@@ -1,33 +1,54 @@
-#!/usr/bin/env bash
-# --------------------------------------------------------
-# InternImage
-# Copyright (c) 2022 OpenGVLab
-# Licensed under The MIT License [see LICENSE for details]
-# --------------------------------------------------------
 #!/bin/bash
-#SBATCH -p accelerated  # Use the dev_gpu_4_a100 partition with A100 GPUs dev_gpu_4
-#SBATCH -n 1                   # Number of tasks (1 for single node)
-#SBATCH -t 00:02:00            # Time limit (10 minutes for debugging purposes)
-#SBATCH --mem=10000             # Memory request (adjust as needed)
-#SBATCH --gres=gpu:1           # Request 1 GPU (adjust if you need more)
-#SBATCH --cpus-per-task=16     # Number of CPUs per GPU (16 for A100)
-#SBATCH --ntasks-per-node=1    # Number of tasks per node (1 in this case)
+#SBATCH -p accelerated
+#SBATCH -n 1
+#SBATCH -t 00:03:00
+#SBATCH --mem=16G
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+
+set -e
 
 echo "Running on $(hostname)"
 echo "Date: $(date)"
 
-# Load CUDA (make sure version exists!)
+# ---------------------------
+# CUDA
+# ---------------------------
 module load devel/cuda/11.8
 
-# Activate conda
+# ---------------------------
+# CONDA (ONLY ONCE!)
+# ---------------------------
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate /hkfs/work/workspace/scratch/ma_nilbecke-thesis/miniconda3/envs/t_env
 
-echo "Python path:"
-which python
-python -c "import sys; print(sys.executable)"
+# ---------------------------
+# FORCE GCC toolchain (conda fallback)
+# ---------------------------
+export CC=$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-gcc
+export CXX=$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-g++
+export CUDAHOSTCXX=$CXX
 
-echo "Python version:"
-python --version
+unset CFLAGS
+unset CXXFLAGS
+unset CPATH
+unset LD_LIBRARY_PATH
 
-python setup.py build install
+# ---------------------------
+# FIX SETUPTOOLS BUG (IMPORTANT)
+# ---------------------------
+#pip install -U pip setuptools wheel
+#pip install "setuptools<70" "packaging<24"
+
+# ---------------------------
+# GO TO CORRECT PATH
+# ---------------------------
+#cd $SLURM_SUBMIT_DIR/InternImage/segmentation/ops_dcnv3
+
+rm -rf build
+
+echo "Building DCNv3..."
+
+python setup.py install
+
+echo "Done"
